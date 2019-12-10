@@ -1,34 +1,13 @@
-const simpleData = {
-    currentVersion: {
-        layout: {
-            rows: [
-                {
-                    id: 0,
-                    type: 'row'
-                },
-                {
-                    id: 1,
-                    type: 'row'
-                },
-                {
-                    id: 3,
-                    type: 'row'
-                },
-            ],
-            layout: [
-                { id: 0, type: 'row' },
-                { id: 1, type: 'row' },
-                { id: 3, type: 'row' },
-                { id: 0, type: 'brick' },
-            ],
-            id: 5,
-            type: 'row'
-        }
-    }
-}
+const pageData = require('./data/pageData.js');
+const validPageExample = require('./data/validPageExample.js');
+const simpleData = require('./data/simpleData.js');
+const tets1v = require('./data/tets1-v.js');
+const naGasSupply = require('./data/naGasSupply.js');
+const gmfs = require('./data/gmfs.js');
 
 function fixIDs(pageObj, largestID) {
-    let lastID = largestID++;
+    console.log('largestID', largestID);
+    let lastID = ++largestID;
     function fix(obj) {
         if (typeof obj == 'object') {
             if (obj == null) {
@@ -62,8 +41,8 @@ function fixIDs(pageObj, largestID) {
         }
     }
 
-    fix(pageObj);
-    console.log('pageObj: ', JSON.stringify(pageObj));
+    fix(pageObj.currentVersion.layout);
+    console.log('pageObj: ', JSON.stringify(pageObj.currentVersion.layout));
     return;
 }
 
@@ -85,55 +64,54 @@ function sortNumber(a, b) {
     return a - b;
 }
 
+function findIDs(obj, ids) {
+    if (typeof obj == 'object') {
+        if (obj instanceof Array) {
+            if (obj.length) {
+                obj.map(o => {
+                    findIDs(o, ids);
+                });
+            } else {
+                return;
+            }
+        } else {
+            if (obj == null) {
+                return;
+            }
+            if (obj['id'] !== undefined) {
+                ids.push(obj['id']);
+            }
+            Object.keys(obj).map(key => {
+                if (typeof obj[key] == 'object') {
+                    findIDs(obj[key], ids);
+                } else {
+                    return;
+                }
+            })
+
+        }
+    } else {
+        return;
+    }
+}
+
 function isValidPageObject(pageObj) {
     if (!pageObj.currentVersion) {
         return { isValid: true };
     }
     const ids = [];
     const { currentVersion } = pageObj;
-    function findIDs(obj) {
-        if (typeof obj == 'object') {
-            if (obj instanceof Array) {
-                if (obj.length) {
-                    obj.map(o => {
-                        findIDs(o);
-                    });
-                } else {
-                    return;
-                }
-            } else {
-                if (obj == null) {
-                    return;
-                }
-                if (obj['id'] !== undefined) {
-                    ids.push(obj['id']);
-                }
-                Object.keys(obj).map(key => {
-                    if (typeof obj[key] == 'object') {
-                        findIDs(obj[key]);
-                    } else {
-                        return;
-                    }
-                })
-
-            }
-        } else {
-            return;
-        }
-    }
-    findIDs(currentVersion.layout);
+    findIDs(currentVersion.layout, ids);
     const largestID = ids.sort(sortNumber)[ids.length - 1];
-    console.log('largestID: ', largestID);
     const notUniqueIDs = getNotUniqueIDs(ids);
     if (notUniqueIDs.length) {
         console.log('Not unique ids: ', notUniqueIDs.sort().join(', '));
         return { isValid: false, largestID };
     }
-    console.log('ids: ', ids);
     return { isValid: true };
 }
 
-const dataArray = [simpleData];
+const dataArray = [validPageExample];
 dataArray.forEach(function (pageObj) {
     const { isValid, largestID } = isValidPageObject(pageObj);
     if (!isValid) {
